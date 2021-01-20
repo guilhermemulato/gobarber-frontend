@@ -11,6 +11,7 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 
 import { Container, Content, Background } from './styles';
+import { Link } from 'react-router-dom';
 
 const SingIn: React.FC = () => {
     const FormRef = useRef<FormHandles>(null);
@@ -53,10 +54,10 @@ const SingIn: React.FC = () => {
                     />
                     <Button type="submit">Cadastrar</Button>
                 </Form>
-                <a href="login">
+                <Link to="/">
                     <FiArrowLeft />
                     Voltar para logon
-                </a>
+                </Link>
             </Content>
         </Container>
     );

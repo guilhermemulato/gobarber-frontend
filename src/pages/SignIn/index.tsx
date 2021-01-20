@@ -3,6 +3,9 @@ import logo from '../../assets/logo.svg';
 import { FiLogIn, FiMail, FiLock } from 'react-icons/fi';
 import { Form } from '@unform/web';
 import { FormHandles } from '@unform/core';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../hooks/auth';
+import { useToast } from '../../hooks/toast';
 import * as Yup from 'yup';
 import getValidationErrors from '../../utils/getValadationErrors';
 
@@ -11,28 +14,54 @@ import Input from '../../components/Input';
 
 import { Container, Content, Background } from './styles';
 
+interface CredencialsFormData {
+    email: string;
+    password: string;
+}
+
 const SingIn: React.FC = () => {
     const FormRef = useRef<FormHandles>(null);
 
-    const handleSubmit = useCallback(async (data: object) => {
-        try {
-            FormRef.current?.setErrors({});
-            const schema = Yup.object().shape({
-                email: Yup.string()
-                    .required('Email obrigatorio')
-                    .email('Digite um email valido'),
-                password: Yup.string().required('Senha obrigatória'),
-            });
+    const { signIn } = useAuth();
+    const { addToast } = useToast();
 
-            await schema.validate(data, {
-                abortEarly: false,
-            });
-        } catch (err) {
-            console.log(err);
-            const errors = getValidationErrors(err);
-            FormRef.current?.setErrors(errors);
-        }
-    }, []);
+    const handleSubmit = useCallback(
+        async (data: CredencialsFormData) => {
+            try {
+                FormRef.current?.setErrors({});
+                const schema = Yup.object().shape({
+                    email: Yup.string()
+                        .required('Email obrigatorio')
+                        .email('Digite um email valido'),
+                    password: Yup.string().required('Senha obrigatória'),
+                });
+
+                await schema.validate(data, {
+                    abortEarly: false,
+                });
+
+                await signIn({
+                    email: data.email,
+                    password: data.password,
+                });
+            } catch (err) {
+                if (err instanceof Yup.ValidationError) {
+                    const errors = getValidationErrors(err);
+                    FormRef.current?.setErrors(errors);
+
+                    return;
+                }
+
+                addToast({
+                    type: 'error',
+                    title: 'Ocorreu um erro na autenticação',
+                    description:
+                        'Ocorreu um erro ao fazer login, cheque as credenciais',
+                });
+            }
+        },
+        [signIn, addToast],
+    );
 
     return (
         <Container>
@@ -51,10 +80,10 @@ const SingIn: React.FC = () => {
                     <Button type="submit">Entrar</Button>
                     <a href="forgot">Esqueci minha senha</a>
                 </Form>
-                <a href="login">
+                <Link to="signup">
                     <FiLogIn />
                     Criar Conta
-                </a>
+                </Link>
             </Content>
             <Background />
         </Container>
