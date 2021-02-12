@@ -1,10 +1,9 @@
 import React, { useRef, useCallback } from 'react';
 import logo from '../../assets/logo.svg';
-import { FiLogIn, FiMail, FiLock } from 'react-icons/fi';
+import { FiLock } from 'react-icons/fi';
 import { Form } from '@unform/web';
 import { FormHandles } from '@unform/core';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../../hooks/auth';
+import { useHistory, useLocation } from 'react-router-dom';
 import { useToast } from '../../hooks/toast';
 import * as Yup from 'yup';
 import getValidationErrors from '../../utils/getValadationErrors';
@@ -13,16 +12,18 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 
 import { Container, Content, AnimationContainer, Background } from './styles';
+import { api } from '../../services/apiClient';
 
 interface CredencialsFormData {
-    email: string;
     password: string;
+    password_confirmation: string;
 }
 
 const SingIn: React.FC = () => {
     const FormRef = useRef<FormHandles>(null);
 
-    const { signIn } = useAuth();
+    const location = useLocation();
+    const history = useHistory();
     const { addToast } = useToast();
 
     const handleSubmit = useCallback(
@@ -30,20 +31,30 @@ const SingIn: React.FC = () => {
             try {
                 FormRef.current?.setErrors({});
                 const schema = Yup.object().shape({
-                    email: Yup.string()
-                        .required('Email obrigatorio')
-                        .email('Digite um email valido'),
                     password: Yup.string().required('Senha obrigatória'),
+                    password_confirmation: Yup.string().oneOf(
+                        [Yup.ref('password'), null],
+                        'Senhas não conferem',
+                    ),
                 });
 
                 await schema.validate(data, {
                     abortEarly: false,
                 });
+                const { password, password_confirmation } = data;
+                const token = location.search.replace('?token=', '');
 
-                await signIn({
-                    email: data.email,
-                    password: data.password,
+                if (!token) {
+                    throw new Error();
+                }
+
+                await api.post('/password/reset', {
+                    password,
+                    password_confirmation,
+                    token,
                 });
+
+                history.push('/');
             } catch (err) {
                 if (err instanceof Yup.ValidationError) {
                     const errors = getValidationErrors(err);
@@ -54,13 +65,13 @@ const SingIn: React.FC = () => {
 
                 addToast({
                     type: 'error',
-                    title: 'Ocorreu um erro na autenticação',
+                    title: 'Ocorreu um erro na alteração de senha',
                     description:
-                        'Ocorreu um erro ao fazer login, cheque as credenciais',
+                        'Ocorreu um erro ao alterar sua senha, tente novamente',
                 });
             }
         },
-        [signIn, addToast],
+        [addToast, history, location.search],
     );
 
     return (
@@ -69,22 +80,22 @@ const SingIn: React.FC = () => {
                 <AnimationContainer>
                     <img src={logo} alt="goBarber" />
                     <Form ref={FormRef} onSubmit={handleSubmit}>
-                        <h1>Faça seu logon</h1>
+                        <h1>Resetar Senha</h1>
 
-                        <Input name="email" icon={FiMail} placeholder="Email" />
                         <Input
                             name="password"
                             icon={FiLock}
                             type="password"
-                            placeholder="Senha"
+                            placeholder="Nova senha"
                         />
-                        <Button type="submit">Entrar</Button>
-                        <Link to="/forgot-password">Esqueci minha senha</Link>
+                        <Input
+                            name="password_confirmation"
+                            icon={FiLock}
+                            type="password"
+                            placeholder="Confirmar nova senha"
+                        />
+                        <Button type="submit">Alterar Senha</Button>
                     </Form>
-                    <Link to="/signup">
-                        <FiLogIn />
-                        Criar Conta
-                    </Link>
                 </AnimationContainer>
             </Content>
             <Background />
