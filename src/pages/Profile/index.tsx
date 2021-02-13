@@ -178,7 +178,7 @@ const Profile: React.FC = () => {
                         type="password"
                         placeholder="Confirma Senha"
                     />
-                    <Button type="submit">Confirmar mudanças</Button>
+                    <Button type="submit">Confirmar Mudanças</Button>
                 </Form>
             </Content>
         </Container>
