@@ -145,6 +145,7 @@ const Profile: React.FC = () => {
                 >
                     <AvatarInput>
                         <img src={user.avatar_url} alt={user.name} />
+
                         <label htmlFor="avatar">
                             <FiCamera />
 
